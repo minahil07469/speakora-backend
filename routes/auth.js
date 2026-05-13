@@ -130,16 +130,16 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ message: 'No account found with this email.' });
     }
 
-    // 8 character random code banao
+    // Generate 8-character random reset code
     const code = Math.random().toString(36).substring(2, 6).toUpperCase() +
                  Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Code aur expiry user mein save karo
+    // Save code and expiry on user
     user.resetCode       = code;
     user.resetCodeExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // Email bhejo
+    // Send email
     await transporter.sendMail({
       from:    `"Speakora Support" <${process.env.GMAIL_USER}>`,
       to:      user.email,
@@ -187,17 +187,17 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'No account found with this email.' });
     }
 
-    // Code verify karo
+    // Verify code
     if (!user.resetCode || user.resetCode !== code.toUpperCase()) {
       return res.status(400).json({ message: 'Invalid reset code.' });
     }
 
-    // Expiry check karo
+    // Check expiry
     if (!user.resetCodeExpiry || user.resetCodeExpiry < new Date()) {
       return res.status(400).json({ message: 'Reset code has expired. Please request a new one.' });
     }
 
-    // Password update karo
+    // Update password
     user.password        = await bcrypt.hash(newPassword, 10);
     user.resetCode       = undefined;
     user.resetCodeExpiry = undefined;
